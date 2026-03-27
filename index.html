@@ -154,6 +154,7 @@ let selectedBus = {};
 let bookedSeats = [2,5,9,14];
 let maleSeats = [3,7,11];
 let femaleSeats = [4,8,12];
+let passengerType = "";
 
 function searchBuses(){
     let from = document.getElementById("from").value;
@@ -185,19 +186,7 @@ function searchBuses(){
     seatSection.innerHTML = "";
     selectedSeats = [];
 
-    let title = document.createElement("h3");
-    title.innerText = `${from} ➜ ${to}`;
-    results.appendChild(title);
-
-    let currentHour = today.getHours();
-
     buses.forEach(bus=>{
-        let busHour = parseInt(bus.time.split(":")[0]);
-
-        if(selectedDate.toDateString() === today.toDateString() && busHour <= currentHour){
-            return;
-        }
-
         let div = document.createElement("div");
         div.className = "bus-card";
 
@@ -220,9 +209,13 @@ function selectBus(bus){
     let seatDiv = document.getElementById("seatSection");
     seatDiv.innerHTML = "";
 
-    let title = document.createElement("h3");
-    title.innerText = `Select Seats (Max 5) - ${bus.name}`;
-    seatDiv.appendChild(title);
+    seatDiv.innerHTML += `
+        <select id="passengerType">
+            <option value="">Select Passenger Type</option>
+            <option>Male</option>
+            <option>Female</option>
+        </select>
+    `;
 
     let layout = document.createElement("div");
     layout.className = "bus-layout";
@@ -288,6 +281,23 @@ function createSeat(num){
     }
 
     seat.onclick = ()=>{
+        passengerType = document.getElementById("passengerType").value;
+
+        if(!passengerType){
+            alert("Select passenger type first!");
+            return;
+        }
+
+        if(passengerType==="Male" && femaleSeats.includes(num)){
+            alert("Male cannot select female reserved seat!");
+            return;
+        }
+
+        if(passengerType==="Female" && maleSeats.includes(num)){
+            alert("Female cannot select male reserved seat!");
+            return;
+        }
+
         if(selectedSeats.includes(num)){
             selectedSeats = selectedSeats.filter(s=>s!==num);
             seat.classList.remove("selected");
@@ -312,14 +322,12 @@ function confirmBooking(){
     let cnic = document.getElementById("cnic").value;
     let payment = document.getElementById("paymentMethod").value;
 
-    if(selectedSeats.length === 0 || !name || !cnic || !payment){
-        alert("Please fill all details including payment!");
+    if(selectedSeats.length === 0 || !name || !cnic || !payment || !passengerType){
+        alert("Fill all details!");
         return;
     }
 
-    if(confirm(`Confirm payment via ${payment}?`)){
-        document.getElementById("successPopup").style.display="flex";
-    }
+    document.getElementById("successPopup").style.display="flex";
 }
 
 function closePopup(){
@@ -330,47 +338,14 @@ function downloadTicket(){
     const { jsPDF } = window.jspdf;
     let doc = new jsPDF();
 
-    let from = document.getElementById("from").value;
-    let to = document.getElementById("to").value;
-    let date = document.getElementById("date").value;
     let name = document.getElementById("name").value;
-    let cnic = document.getElementById("cnic").value;
-    let payment = document.getElementById("paymentMethod").value;
 
-    let total = selectedSeats.length * selectedBus.price;
+    doc.text("BUS TICKET",20,20);
+    doc.text(`Name: ${name}`,20,40);
+    doc.text(`Passenger: ${passengerType}`,20,50);
+    doc.text(`Seats: ${selectedSeats.join(", ")}`,20,60);
 
-    let qrData = `
-Name: ${name}
-CNIC: ${cnic}
-Route: ${from} to ${to}
-Date: ${date}
-Time: ${selectedBus.time}
-Seats: ${selectedSeats.join(",")}
-Total: ${total}
-Payment: ${payment}
-`;
-
-    let qrDiv = document.createElement("div");
-    new QRCode(qrDiv,{text:qrData,width:100,height:100});
-
-    setTimeout(()=>{
-        let img = qrDiv.querySelector("img").src;
-
-        doc.text("BUS TICKET",20,20);
-        doc.text(`Name: ${name}`,20,40);
-        doc.text(`CNIC: ${cnic}`,20,50);
-        doc.text(`Route: ${from} to ${to}`,20,60);
-        doc.text(`Date: ${date}`,20,70);
-        doc.text(`Time: ${selectedBus.time}`,20,80);
-        doc.text(`Bus: ${selectedBus.name}`,20,90);
-        doc.text(`Seats: ${selectedSeats.join(", ")}`,20,100);
-        doc.text(`Total Price: Rs ${total}`,20,110);
-        doc.text(`Payment: ${payment}`,20,120);
-
-        doc.addImage(img,"PNG",140,40,50,50);
-
-        doc.save("ticket.pdf");
-    },300);
+    doc.save("ticket.pdf");
 }
 </script>
 
