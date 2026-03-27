@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pakistan Bus Booking</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: linear-gradient(135deg,#141e30,#243b55);
+    color: white;
+}
+
+header {
+    text-align: center;
+    padding: 15px;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+    padding: 15px;
+}
+
+select, input, button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    background: #00c6ff;
+    color: white;
+    cursor: pointer;
+}
+
+.bus-card {
+    background: rgba(255,255,255,0.1);
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 10px;
+}
+
+/* Seats */
+.seats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.seat {
+    background: #ccc;
+    color: black;
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.selected {
+    background: green;
+    color: white;
+}
+
+/* Popup */
+.popup {
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.8);
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+
+.popup-content {
+    background:white;
+    color:black;
+    padding:20px;
+    border-radius:10px;
+    text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<header>🚌 Pakistan Bus Booking</header>
+
+<div class="container">
+
+<select id="from">
+<option>Lahore</option>
+<option>Islamabad</option>
+<option>Karachi</option>
+</select>
+
+<select id="to">
+<option>Islamabad</option>
+<option>Lahore</option>
+<option>Multan</option>
+</select>
+
+<input type="date" id="date">
+
+<button onclick="searchBuses()">Search</button>
+
+<div id="results"></div>
+
+<div id="seatSection"></div>
+
+</div>
+
+<!-- Payment Popup -->
+<div class="popup" id="paymentPopup">
+<div class="popup-content">
+<h3>Confirm Payment?</h3>
+<button onclick="confirmPayment()">Yes, Pay</button>
+<button onclick="closePopup()">Cancel</button>
+</div>
+</div>
+
+<!-- Success Popup -->
+<div class="popup" id="successPopup">
+<div class="popup-content">
+<h2>🎉 Your purchase has been completed!</h2>
+<button onclick="downloadTicket()">Download Ticket (PDF)</button>
+<button onclick="closePopup()">Close</button>
+</div>
+</div>
+
+<script>
+let selectedSeat = "";
+let selectedBus = {};
+
+function searchBuses() {
+    let results = document.getElementById("results");
+    results.innerHTML = "";
+
+    let buses = [
+        {name:"Daewoo Executive", time:"10:00 AM", category:"Executive", price:2500},
+        {name:"Faisal Movers Business", time:"2:00 PM", category:"Business", price:3000},
+        {name:"Skyways First Class", time:"6:00 PM", category:"First Class", price:4000}
+    ];
+
+    buses.forEach(bus=>{
+        let div = document.createElement("div");
+        div.className="bus-card";
+        div.innerHTML=`
+            <h3>${bus.name}</h3>
+            <p>Category: ${bus.category}</p>
+            <p>Time: ${bus.time}</p>
+            <p>Price: Rs ${bus.price}</p>
+            <button onclick='selectBus(${JSON.stringify(bus)})'>Select</button>
+        `;
+        results.appendChild(div);
+    });
+}
+
+function selectBus(bus){
+    selectedBus = bus;
+    let seatDiv = document.getElementById("seatSection");
+    seatDiv.innerHTML = "<h3>Select Seat:</h3>";
+
+    let seats = document.createElement("div");
+    seats.className="seats";
+
+    for(let i=1;i<=12;i++){
+        let seat = document.createElement("div");
+        seat.className="seat";
+        seat.innerText=i;
+        seat.onclick=()=>{
+            document.querySelectorAll(".seat").forEach(s=>s.classList.remove("selected"));
+            seat.classList.add("selected");
+            selectedSeat = i;
+        };
+        seats.appendChild(seat);
+    }
+
+    seatDiv.appendChild(seats);
+
+    let btn = document.createElement("button");
+    btn.innerText="Proceed to Payment";
+    btn.onclick=openPayment;
+    seatDiv.appendChild(btn);
+}
+
+function openPayment(){
+    if(!selectedSeat){
+        alert("Please select a seat!");
+        return;
+    }
+    document.getElementById("paymentPopup").style.display="flex";
+}
+
+function confirmPayment(){
+    document.getElementById("paymentPopup").style.display="none";
+    document.getElementById("successPopup").style.display="flex";
+}
+
+function closePopup(){
+    document.querySelectorAll(".popup").forEach(p=>p.style.display="none");
+}
+
+function downloadTicket(){
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
+
+    let from = document.getElementById("from").value;
+    let to = document.getElementById("to").value;
+    let date = document.getElementById("date").value;
+
+    doc.text("🚌 Bus Ticket", 20, 20);
+    doc.text(`From: ${from}`, 20, 40);
+    doc.text(`To: ${to}`, 20, 50);
+    doc.text(`Date: ${date}`, 20, 60);
+    doc.text(`Bus: ${selectedBus.name}`, 20, 70);
+    doc.text(`Category: ${selectedBus.category}`, 20, 80);
+    doc.text(`Seat: ${selectedSeat}`, 20, 90);
+    doc.text(`Price: Rs ${selectedBus.price}`, 20, 100);
+
+    doc.save("ticket.pdf");
+}
+</script>
+
+</body>
+</html>
