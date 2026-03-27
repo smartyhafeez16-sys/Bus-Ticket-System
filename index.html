@@ -61,7 +61,7 @@ button {
     border-radius:12px;
 }
 
-/* Seats */
+/* Seat Layout */
 .bus-layout {
     margin-top:20px;
     background:rgba(0,0,0,0.3);
@@ -91,7 +91,6 @@ button {
 
 .aisle { width:20px; }
 
-/* Popup */
 .popup {
     position:fixed;
     top:0; left:0;
@@ -162,7 +161,7 @@ function searchBuses(){
     let to = document.getElementById("to").value;
 
     if(from === to){
-        alert("Departure and destination cannot be the same!");
+        alert("Departure and destination cannot be same!");
         return;
     }
 
@@ -246,6 +245,11 @@ function selectBus(bus){
 
     seatDiv.appendChild(layout);
 
+    let priceBox = document.createElement("p");
+    priceBox.id = "priceBox";
+    priceBox.innerText = "Total Price: Rs 0";
+    seatDiv.appendChild(priceBox);
+
     let form = document.createElement("div");
     form.innerHTML = `
         <input placeholder="Your Name" id="name">
@@ -279,16 +283,17 @@ function createSeat(num){
         if(selectedSeats.includes(num)){
             selectedSeats = selectedSeats.filter(s=>s!==num);
             seat.classList.remove("selected");
-            return;
+        } else {
+            if(selectedSeats.length >= 5){
+                alert("Maximum 5 seats allowed!");
+                return;
+            }
+            selectedSeats.push(num);
+            seat.classList.add("selected");
         }
 
-        if(selectedSeats.length >= 5){
-            alert("Maximum 5 seats allowed!");
-            return;
-        }
-
-        selectedSeats.push(num);
-        seat.classList.add("selected");
+        document.getElementById("priceBox").innerText =
+            "Total Price: Rs " + (selectedSeats.length * selectedBus.price);
     };
 
     return seat;
@@ -320,6 +325,8 @@ function downloadTicket(){
     let name = document.getElementById("name").value;
     let cnic = document.getElementById("cnic").value;
 
+    let total = selectedSeats.length * selectedBus.price;
+
     let qrData = `
 Name: ${name}
 CNIC: ${cnic}
@@ -327,6 +334,7 @@ Route: ${from} to ${to}
 Date: ${date}
 Time: ${selectedBus.time}
 Seats: ${selectedSeats.join(",")}
+Total: ${total}
 `;
 
     let qrDiv = document.createElement("div");
@@ -343,7 +351,7 @@ Seats: ${selectedSeats.join(",")}
         doc.text(`Time: ${selectedBus.time}`,20,80);
         doc.text(`Bus: ${selectedBus.name}`,20,90);
         doc.text(`Seats: ${selectedSeats.join(", ")}`,20,100);
-        doc.text(`Price: Rs ${selectedBus.price}`,20,110);
+        doc.text(`Total Price: Rs ${total}`,20,110);
 
         doc.addImage(img,"PNG",140,40,50,50);
 
@@ -353,4 +361,4 @@ Seats: ${selectedSeats.join(",")}
 </script>
 
 </body>
-</html>
+</html>v
