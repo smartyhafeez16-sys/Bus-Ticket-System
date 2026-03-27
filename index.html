@@ -8,15 +8,23 @@
 <!-- PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<!-- QR Code -->
+<!-- QR -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 body {
     margin:0;
     font-family:'Segoe UI';
-    background: linear-gradient(135deg,#0f2027,#2c5364);
+    background: linear-gradient(120deg, #0a1f44, #1e3c72, #ff4da6);
+    background-size: 300% 300%;
+    animation: bgMove 8s ease infinite;
     color:white;
+}
+
+@keyframes bgMove {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
 }
 
 header {
@@ -89,8 +97,7 @@ button {
 }
 
 .selected {
-    background:green;
-    color:white;
+    outline:3px solid #00ff88;
 }
 
 .aisle {
@@ -148,7 +155,6 @@ button {
 
 </div>
 
-<!-- Success Popup -->
 <div class="popup" id="successPopup">
 <div class="popup-content">
 <h2>🎉 Your purchase has been completed!</h2>
@@ -158,24 +164,47 @@ button {
 </div>
 
 <script>
-let selectedSeat = "";
+let selectedSeats = [];
 let selectedBus = {};
 let bookedSeats = [2,5,9,14];
+let maleSeats = [3,7,11];
+let femaleSeats = [4,8,12];
 
 function searchBuses(){
     let from = document.getElementById("from").value;
     let to = document.getElementById("to").value;
 
+    if(from === to){
+        alert("Departure and destination cannot be the same!");
+        return;
+    }
+
+    let today = new Date();
+    let selectedDate = new Date(document.getElementById("date").value);
+
+    if(selectedDate < new Date(today.toDateString())){
+        alert("You cannot select a past date!");
+        return;
+    }
+
     let buses = [
-        {name:"Daewoo Executive",time:"10:00 AM",category:"Executive",price:2500},
-        {name:"Faisal Movers Business",time:"2:00 PM",category:"Business",price:3000},
-        {name:"Luxury First Class",time:"6:00 PM",category:"First Class",price:4000}
+        {name:"Daewoo Executive",time:"10:00",category:"Executive",price:2500},
+        {name:"Faisal Movers Business",time:"14:00",category:"Business",price:3000},
+        {name:"Luxury First Class",time:"18:00",category:"First Class",price:4000}
     ];
+
+    let currentHour = today.getHours();
 
     let results = document.getElementById("results");
     results.innerHTML = `<h3>${from} ➜ ${to}</h3>`;
 
     buses.forEach(bus=>{
+        let busHour = parseInt(bus.time.split(":")[0]);
+
+        if(selectedDate.toDateString() === today.toDateString() && busHour <= currentHour){
+            return;
+        }
+
         let div = document.createElement("div");
         div.className = "bus-card";
         div.innerHTML = `
@@ -192,10 +221,10 @@ function searchBuses(){
 
 function selectBus(bus){
     selectedBus = bus;
-    selectedSeat = "";
+    selectedSeats = [];
 
     let seatDiv = document.getElementById("seatSection");
-    seatDiv.innerHTML = "<h3>Select Seat</h3>";
+    seatDiv.innerHTML = "<h3>Select Seats (Max 5)</h3>";
 
     let layout = document.createElement("div");
     layout.className = "bus-layout";
@@ -206,32 +235,21 @@ function selectBus(bus){
         let row = document.createElement("div");
         row.className="row";
 
-        for(let j=0;j<2;j++){
-            row.appendChild(createSeat(seatNum++));
-        }
-
+        for(let j=0;j<2;j++) row.appendChild(createSeat(seatNum++));
         let aisle = document.createElement("div");
         aisle.className="aisle";
         row.appendChild(aisle);
-
-        for(let j=0;j<2;j++){
-            row.appendChild(createSeat(seatNum++));
-        }
+        for(let j=0;j<2;j++) row.appendChild(createSeat(seatNum++));
 
         layout.appendChild(row);
     }
 
     seatDiv.appendChild(layout);
 
-    // Form
     let form = document.createElement("div");
     form.innerHTML = `
         <input placeholder="Your Name" id="name">
         <input placeholder="CNIC" id="cnic">
-        <select id="payment">
-            <option>JazzCash</option>
-            <option>Easypaisa</option>
-        </select>
         <button onclick="confirmBooking()">Confirm Booking</button>
     `;
     seatDiv.appendChild(form);
@@ -244,13 +262,35 @@ function createSeat(num){
 
     if(bookedSeats.includes(num)){
         seat.classList.add("booked");
-    } else {
-        seat.onclick = ()=>{
-            document.querySelectorAll(".seat").forEach(s=>s.classList.remove("selected"));
-            seat.classList.add("selected");
-            selectedSeat = num;
-        };
+        return seat;
     }
+
+    if(maleSeats.includes(num)){
+        seat.style.background="#007bff";
+        seat.style.color="white";
+    }
+
+    if(femaleSeats.includes(num)){
+        seat.style.background="#ff4da6";
+        seat.style.color="white";
+    }
+
+    seat.onclick = ()=>{
+        if(selectedSeats.includes(num)){
+            selectedSeats = selectedSeats.filter(s=>s!==num);
+            seat.classList.remove("selected");
+            return;
+        }
+
+        if(selectedSeats.length >= 5){
+            alert("Max 5 seats allowed!");
+            return;
+        }
+
+        selectedSeats.push(num);
+        seat.classList.add("selected");
+    };
+
     return seat;
 }
 
@@ -258,8 +298,8 @@ function confirmBooking(){
     let name = document.getElementById("name").value;
     let cnic = document.getElementById("cnic").value;
 
-    if(!selectedSeat || !name || !cnic){
-        alert("Please complete all fields!");
+    if(selectedSeats.length === 0 || !name || !cnic){
+        alert("Fill all details!");
         return;
     }
 
@@ -286,35 +326,29 @@ CNIC: ${cnic}
 Route: ${from} to ${to}
 Date: ${date}
 Time: ${selectedBus.time}
-Seat: ${selectedSeat}
-Bus: ${selectedBus.name}
+Seats: ${selectedSeats.join(",")}
 `;
 
     let qrDiv = document.createElement("div");
-    let qr = new QRCode(qrDiv, {
-        text: qrData,
-        width: 100,
-        height: 100
-    });
+    new QRCode(qrDiv, { text: qrData, width:100, height:100 });
 
     setTimeout(()=>{
         let img = qrDiv.querySelector("img").src;
 
-        doc.text("🚌 BUS TICKET",20,20);
+        doc.text("BUS TICKET",20,20);
         doc.text(`Name: ${name}`,20,40);
         doc.text(`CNIC: ${cnic}`,20,50);
         doc.text(`Route: ${from} to ${to}`,20,60);
         doc.text(`Date: ${date}`,20,70);
         doc.text(`Time: ${selectedBus.time}`,20,80);
         doc.text(`Bus: ${selectedBus.name}`,20,90);
-        doc.text(`Category: ${selectedBus.category}`,20,100);
-        doc.text(`Seat: ${selectedSeat}`,20,110);
-        doc.text(`Price: Rs ${selectedBus.price}`,20,120);
+        doc.text(`Seats: ${selectedSeats.join(", ")}`,20,100);
+        doc.text(`Price: Rs ${selectedBus.price}`,20,110);
 
-        doc.addImage(img, "PNG", 140, 40, 50, 50);
+        doc.addImage(img,"PNG",140,40,50,50);
 
         doc.save("ticket.pdf");
-    }, 400);
+    },300);
 }
 </script>
 
