@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Premium Bus Booking Pakistan</title>
 
+<!-- PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- QR Code -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 body {
@@ -45,7 +49,6 @@ button {
     cursor:pointer;
 }
 
-/* Bus Card */
 .bus-card {
     background:rgba(255,255,255,0.2);
     padding:12px;
@@ -92,14 +95,6 @@ button {
 
 .aisle {
     width:20px;
-}
-
-/* Payment */
-.payment-box {
-    background:rgba(255,255,255,0.2);
-    padding:15px;
-    border-radius:10px;
-    margin-top:10px;
 }
 
 /* Popup */
@@ -153,7 +148,7 @@ button {
 
 </div>
 
-<!-- SUCCESS -->
+<!-- Success Popup -->
 <div class="popup" id="successPopup">
 <div class="popup-content">
 <h2>🎉 Your purchase has been completed!</h2>
@@ -163,55 +158,59 @@ button {
 </div>
 
 <script>
-let selectedSeat="";
-let selectedBus={};
-let bookedSeats=[2,5,9,14];
+let selectedSeat = "";
+let selectedBus = {};
+let bookedSeats = [2,5,9,14];
 
 function searchBuses(){
-    let from=document.getElementById("from").value;
-    let to=document.getElementById("to").value;
+    let from = document.getElementById("from").value;
+    let to = document.getElementById("to").value;
 
-    let buses=[
-        {name:"Daewoo Executive",time:"10AM",category:"Executive",price:2500},
-        {name:"Faisal Movers Business",time:"2PM",category:"Business",price:3000},
-        {name:"Luxury First Class",time:"6PM",category:"First Class",price:4000}
+    let buses = [
+        {name:"Daewoo Executive",time:"10:00 AM",category:"Executive",price:2500},
+        {name:"Faisal Movers Business",time:"2:00 PM",category:"Business",price:3000},
+        {name:"Luxury First Class",time:"6:00 PM",category:"First Class",price:4000}
     ];
 
-    let results=document.getElementById("results");
-    results.innerHTML=`<h3>${from} ➜ ${to}</h3>`;
+    let results = document.getElementById("results");
+    results.innerHTML = `<h3>${from} ➜ ${to}</h3>`;
 
     buses.forEach(bus=>{
-        let div=document.createElement("div");
-        div.className="bus-card";
-        div.innerHTML=`
+        let div = document.createElement("div");
+        div.className = "bus-card";
+        div.innerHTML = `
             <h3>${bus.name}</h3>
             <p>${bus.category} | ${bus.time}</p>
             <p>Rs ${bus.price}</p>
-            <button onclick='selectBus(${JSON.stringify(bus)})'>Select</button>
+            <button>Select</button>
         `;
+
+        div.querySelector("button").onclick = ()=>selectBus(bus);
         results.appendChild(div);
     });
 }
 
 function selectBus(bus){
-    selectedBus=bus;
-    let seatDiv=document.getElementById("seatSection");
-    seatDiv.innerHTML="<h3>Select Seat</h3>";
+    selectedBus = bus;
+    selectedSeat = "";
 
-    let layout=document.createElement("div");
-    layout.className="bus-layout";
+    let seatDiv = document.getElementById("seatSection");
+    seatDiv.innerHTML = "<h3>Select Seat</h3>";
 
-    let seatNum=1;
+    let layout = document.createElement("div");
+    layout.className = "bus-layout";
+
+    let seatNum = 1;
 
     for(let i=0;i<8;i++){
-        let row=document.createElement("div");
+        let row = document.createElement("div");
         row.className="row";
 
         for(let j=0;j<2;j++){
             row.appendChild(createSeat(seatNum++));
         }
 
-        let aisle=document.createElement("div");
+        let aisle = document.createElement("div");
         aisle.className="aisle";
         row.appendChild(aisle);
 
@@ -224,47 +223,43 @@ function selectBus(bus){
 
     seatDiv.appendChild(layout);
 
-    seatDiv.innerHTML += `
+    // Form
+    let form = document.createElement("div");
+    form.innerHTML = `
         <input placeholder="Your Name" id="name">
         <input placeholder="CNIC" id="cnic">
-
-        <div class="payment-box">
-            <h4>Select Payment</h4>
-            <select id="payment">
-                <option>JazzCash</option>
-                <option>Easypaisa</option>
-            </select>
-        </div>
-
+        <select id="payment">
+            <option>JazzCash</option>
+            <option>Easypaisa</option>
+        </select>
         <button onclick="confirmBooking()">Confirm Booking</button>
     `;
+    seatDiv.appendChild(form);
 }
 
 function createSeat(num){
-    let seat=document.createElement("div");
+    let seat = document.createElement("div");
     seat.className="seat";
     seat.innerText=num;
 
     if(bookedSeats.includes(num)){
         seat.classList.add("booked");
-        return seat;
+    } else {
+        seat.onclick = ()=>{
+            document.querySelectorAll(".seat").forEach(s=>s.classList.remove("selected"));
+            seat.classList.add("selected");
+            selectedSeat = num;
+        };
     }
-
-    seat.onclick=()=>{
-        document.querySelectorAll(".seat").forEach(s=>s.classList.remove("selected"));
-        seat.classList.add("selected");
-        selectedSeat=num;
-    };
-
     return seat;
 }
 
 function confirmBooking(){
-    let name=document.getElementById("name").value;
-    let cnic=document.getElementById("cnic").value;
+    let name = document.getElementById("name").value;
+    let cnic = document.getElementById("cnic").value;
 
     if(!selectedSeat || !name || !cnic){
-        alert("Fill all details!");
+        alert("Please complete all fields!");
         return;
     }
 
@@ -277,323 +272,49 @@ function closePopup(){
 
 function downloadTicket(){
     const { jsPDF } = window.jspdf;
-    let doc=new jsPDF();
+    let doc = new jsPDF();
 
-    let from=document.getElementById("from").value;
-    let to=document.getElementById("to").value;
-    let date=document.getElementById("date").value;
-    let name=document.getElementById("name").value;
+    let from = document.getElementById("from").value;
+    let to = document.getElementById("to").value;
+    let date = document.getElementById("date").value;
+    let name = document.getElementById("name").value;
+    let cnic = document.getElementById("cnic").value;
 
-    doc.text("🚌 BUS TICKET",20,20);
-    doc.text(`Name: ${name}`,20,40);
-    doc.text(`Route: ${from} to ${to}`,20,50);
-    doc.text(`Date: ${date}`,20,60);
-    doc.text(`Bus: ${selectedBus.name}`,20,70);
-    doc.text(`Category: ${selectedBus.category}`,20,80);
-    doc.text(`Seat: ${selectedSeat}`,20,90);
-    doc.text(`Price: Rs ${selectedBus.price}`,20,100);
+    let qrData = `
+Name: ${name}
+CNIC: ${cnic}
+Route: ${from} to ${to}
+Date: ${date}
+Time: ${selectedBus.time}
+Seat: ${selectedSeat}
+Bus: ${selectedBus.name}
+`;
 
-    doc.save("ticket.pdf");
-}
-</script>
-
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premium Bus Booking Pakistan</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<style>
-body {
-    margin:0;
-    font-family:'Segoe UI';
-    background: linear-gradient(135deg,#0f2027,#2c5364);
-    color:white;
-}
-
-header {
-    text-align:center;
-    padding:20px;
-    font-size:28px;
-    font-weight:bold;
-}
-
-.container {
-    max-width:550px;
-    margin:auto;
-    background:rgba(255,255,255,0.1);
-    backdrop-filter:blur(15px);
-    padding:20px;
-    border-radius:15px;
-}
-
-select,input,button {
-    width:100%;
-    padding:12px;
-    margin:8px 0;
-    border:none;
-    border-radius:10px;
-}
-
-button {
-    background:linear-gradient(45deg,#ff512f,#dd2476);
-    color:white;
-    cursor:pointer;
-}
-
-/* Bus Card */
-.bus-card {
-    background:rgba(255,255,255,0.2);
-    padding:12px;
-    margin:10px 0;
-    border-radius:12px;
-}
-
-/* Seat Layout */
-.bus-layout {
-    margin-top:20px;
-    background:rgba(0,0,0,0.3);
-    padding:15px;
-    border-radius:10px;
-}
-
-.row {
-    display:flex;
-    justify-content:space-between;
-    margin:5px 0;
-}
-
-.seat {
-    width:45px;
-    height:45px;
-    background:#eee;
-    color:black;
-    border-radius:8px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-}
-
-.booked {
-    background:#555;
-    cursor:not-allowed;
-    color:white;
-}
-
-.selected {
-    background:green;
-    color:white;
-}
-
-.aisle {
-    width:20px;
-}
-
-/* Payment */
-.payment-box {
-    background:rgba(255,255,255,0.2);
-    padding:15px;
-    border-radius:10px;
-    margin-top:10px;
-}
-
-/* Popup */
-.popup {
-    position:fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    display:none;
-    justify-content:center;
-    align-items:center;
-    background:rgba(0,0,0,0.8);
-}
-
-.popup-content {
-    background:white;
-    color:black;
-    padding:20px;
-    border-radius:10px;
-    text-align:center;
-}
-</style>
-</head>
-
-<body>
-
-<header>🚌 Premium Bus Booking Pakistan</header>
-
-<div class="container">
-
-<select id="from">
-<option>Lahore</option>
-<option>Islamabad</option>
-<option>Karachi</option>
-<option>Hazro</option>
-<option>Attock</option>
-</select>
-
-<select id="to">
-<option>Islamabad</option>
-<option>Lahore</option>
-<option>Multan</option>
-<option>Karachi</option>
-</select>
-
-<input type="date" id="date">
-
-<button onclick="searchBuses()">Search Buses</button>
-
-<div id="results"></div>
-<div id="seatSection"></div>
-
-</div>
-
-<!-- SUCCESS -->
-<div class="popup" id="successPopup">
-<div class="popup-content">
-<h2>🎉 Your purchase has been completed!</h2>
-<button onclick="downloadTicket()">Download Ticket</button>
-<button onclick="closePopup()">Close</button>
-</div>
-</div>
-
-<script>
-let selectedSeat="";
-let selectedBus={};
-let bookedSeats=[2,5,9,14];
-
-function searchBuses(){
-    let from=document.getElementById("from").value;
-    let to=document.getElementById("to").value;
-
-    let buses=[
-        {name:"Daewoo Executive",time:"10AM",category:"Executive",price:2500},
-        {name:"Faisal Movers Business",time:"2PM",category:"Business",price:3000},
-        {name:"Luxury First Class",time:"6PM",category:"First Class",price:4000}
-    ];
-
-    let results=document.getElementById("results");
-    results.innerHTML=`<h3>${from} ➜ ${to}</h3>`;
-
-    buses.forEach(bus=>{
-        let div=document.createElement("div");
-        div.className="bus-card";
-        div.innerHTML=`
-            <h3>${bus.name}</h3>
-            <p>${bus.category} | ${bus.time}</p>
-            <p>Rs ${bus.price}</p>
-            <button onclick='selectBus(${JSON.stringify(bus)})'>Select</button>
-        `;
-        results.appendChild(div);
+    let qrDiv = document.createElement("div");
+    let qr = new QRCode(qrDiv, {
+        text: qrData,
+        width: 100,
+        height: 100
     });
-}
 
-function selectBus(bus){
-    selectedBus=bus;
-    let seatDiv=document.getElementById("seatSection");
-    seatDiv.innerHTML="<h3>Select Seat</h3>";
+    setTimeout(()=>{
+        let img = qrDiv.querySelector("img").src;
 
-    let layout=document.createElement("div");
-    layout.className="bus-layout";
+        doc.text("🚌 BUS TICKET",20,20);
+        doc.text(`Name: ${name}`,20,40);
+        doc.text(`CNIC: ${cnic}`,20,50);
+        doc.text(`Route: ${from} to ${to}`,20,60);
+        doc.text(`Date: ${date}`,20,70);
+        doc.text(`Time: ${selectedBus.time}`,20,80);
+        doc.text(`Bus: ${selectedBus.name}`,20,90);
+        doc.text(`Category: ${selectedBus.category}`,20,100);
+        doc.text(`Seat: ${selectedSeat}`,20,110);
+        doc.text(`Price: Rs ${selectedBus.price}`,20,120);
 
-    let seatNum=1;
+        doc.addImage(img, "PNG", 140, 40, 50, 50);
 
-    for(let i=0;i<8;i++){
-        let row=document.createElement("div");
-        row.className="row";
-
-        for(let j=0;j<2;j++){
-            row.appendChild(createSeat(seatNum++));
-        }
-
-        let aisle=document.createElement("div");
-        aisle.className="aisle";
-        row.appendChild(aisle);
-
-        for(let j=0;j<2;j++){
-            row.appendChild(createSeat(seatNum++));
-        }
-
-        layout.appendChild(row);
-    }
-
-    seatDiv.appendChild(layout);
-
-    seatDiv.innerHTML += `
-        <input placeholder="Your Name" id="name">
-        <input placeholder="CNIC" id="cnic">
-
-        <div class="payment-box">
-            <h4>Select Payment</h4>
-            <select id="payment">
-                <option>JazzCash</option>
-                <option>Easypaisa</option>
-            </select>
-        </div>
-
-        <button onclick="confirmBooking()">Confirm Booking</button>
-    `;
-}
-
-function createSeat(num){
-    let seat=document.createElement("div");
-    seat.className="seat";
-    seat.innerText=num;
-
-    if(bookedSeats.includes(num)){
-        seat.classList.add("booked");
-        return seat;
-    }
-
-    seat.onclick=()=>{
-        document.querySelectorAll(".seat").forEach(s=>s.classList.remove("selected"));
-        seat.classList.add("selected");
-        selectedSeat=num;
-    };
-
-    return seat;
-}
-
-function confirmBooking(){
-    let name=document.getElementById("name").value;
-    let cnic=document.getElementById("cnic").value;
-
-    if(!selectedSeat || !name || !cnic){
-        alert("Fill all details!");
-        return;
-    }
-
-    document.getElementById("successPopup").style.display="flex";
-}
-
-function closePopup(){
-    document.getElementById("successPopup").style.display="none";
-}
-
-function downloadTicket(){
-    const { jsPDF } = window.jspdf;
-    let doc=new jsPDF();
-
-    let from=document.getElementById("from").value;
-    let to=document.getElementById("to").value;
-    let date=document.getElementById("date").value;
-    let name=document.getElementById("name").value;
-
-    doc.text("🚌 BUS TICKET",20,20);
-    doc.text(`Name: ${name}`,20,40);
-    doc.text(`Route: ${from} to ${to}`,20,50);
-    doc.text(`Date: ${date}`,20,60);
-    doc.text(`Bus: ${selectedBus.name}`,20,70);
-    doc.text(`Category: ${selectedBus.category}`,20,80);
-    doc.text(`Seat: ${selectedSeat}`,20,90);
-    doc.text(`Price: Rs ${selectedBus.price}`,20,100);
-
-    doc.save("ticket.pdf");
+        doc.save("ticket.pdf");
+    }, 400);
 }
 </script>
 
