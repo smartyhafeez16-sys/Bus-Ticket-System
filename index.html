@@ -61,7 +61,6 @@ button {
     border-radius:12px;
 }
 
-/* Seat Layout */
 .bus-layout {
     margin-top:20px;
     background:rgba(0,0,0,0.3);
@@ -251,20 +250,20 @@ function selectBus(bus){
     seatDiv.appendChild(priceBox);
 
     let form = document.createElement("div");
-form.innerHTML = `
-    <input placeholder="Your Name" id="name">
-    <input placeholder="CNIC" id="cnic">
+    form.innerHTML = `
+        <input placeholder="Your Name" id="name">
+        <input placeholder="CNIC" id="cnic">
 
-    <select id="paymentMethod">
-        <option value="">Select Payment Method</option>
-        <option>Easypaisa</option>
-        <option>JazzCash</option>
-        <option>Google Pay</option>
-        <option>Card Payment</option>
-    </select>
+        <select id="paymentMethod">
+            <option value="">Select Payment Method</option>
+            <option>Easypaisa</option>
+            <option>JazzCash</option>
+            <option>Google Pay</option>
+            <option>Card Payment</option>
+        </select>
 
-    <button onclick="confirmBooking()">Confirm Booking</button>
-`;
+        <button onclick="confirmBooking()">Confirm Booking</button>
+    `;
     seatDiv.appendChild(form);
 }
 
@@ -311,13 +310,16 @@ function createSeat(num){
 function confirmBooking(){
     let name = document.getElementById("name").value;
     let cnic = document.getElementById("cnic").value;
+    let payment = document.getElementById("paymentMethod").value;
 
-    if(selectedSeats.length === 0 || !name || !cnic){
-        alert("Fill all details!");
+    if(selectedSeats.length === 0 || !name || !cnic || !payment){
+        alert("Please fill all details including payment!");
         return;
     }
 
-    document.getElementById("successPopup").style.display="flex";
+    if(confirm(`Confirm payment via ${payment}?`)){
+        document.getElementById("successPopup").style.display="flex";
+    }
 }
 
 function closePopup(){
@@ -333,6 +335,7 @@ function downloadTicket(){
     let date = document.getElementById("date").value;
     let name = document.getElementById("name").value;
     let cnic = document.getElementById("cnic").value;
+    let payment = document.getElementById("paymentMethod").value;
 
     let total = selectedSeats.length * selectedBus.price;
 
@@ -344,6 +347,7 @@ Date: ${date}
 Time: ${selectedBus.time}
 Seats: ${selectedSeats.join(",")}
 Total: ${total}
+Payment: ${payment}
 `;
 
     let qrDiv = document.createElement("div");
@@ -361,6 +365,7 @@ Total: ${total}
         doc.text(`Bus: ${selectedBus.name}`,20,90);
         doc.text(`Seats: ${selectedSeats.join(", ")}`,20,100);
         doc.text(`Total Price: Rs ${total}`,20,110);
+        doc.text(`Payment: ${payment}`,20,120);
 
         doc.addImage(img,"PNG",140,40,50,50);
 
@@ -370,4 +375,4 @@ Total: ${total}
 </script>
 
 </body>
-</html>v
+</html>
