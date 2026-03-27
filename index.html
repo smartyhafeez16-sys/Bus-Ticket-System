@@ -251,11 +251,20 @@ function selectBus(bus){
     seatDiv.appendChild(priceBox);
 
     let form = document.createElement("div");
-    form.innerHTML = `
-        <input placeholder="Your Name" id="name">
-        <input placeholder="CNIC" id="cnic">
-        <button onclick="confirmBooking()">Confirm Booking</button>
-    `;
+form.innerHTML = `
+    <input placeholder="Your Name" id="name">
+    <input placeholder="CNIC" id="cnic">
+
+    <select id="paymentMethod">
+        <option value="">Select Payment Method</option>
+        <option>Easypaisa</option>
+        <option>JazzCash</option>
+        <option>Google Pay</option>
+        <option>Card Payment</option>
+    </select>
+
+    <button onclick="confirmBooking()">Confirm Booking</button>
+`;
     seatDiv.appendChild(form);
 }
 
